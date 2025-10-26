@@ -1,3 +1,4 @@
+
 export interface Client {
   id: string;
   name: string;
@@ -69,7 +70,15 @@ export interface Allocations {
   [transactionId: string]: Allocation;
 }
 
+interface FirestoreTimestamp {
+    seconds: number;
+    nanoseconds: number;
+}
+
 export interface UploadedFile {
+    id: string;
     name: string;
-    content: string;
+    content?: string; // Content will now be handled server-side
+    uploadedAt: FirestoreTimestamp;
+    uploadedBy: string; // user email
 }

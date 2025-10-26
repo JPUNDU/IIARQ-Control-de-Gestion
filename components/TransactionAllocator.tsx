@@ -2,15 +2,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BankStatement, Transaction, Project, Allocation, ProratedSplit, Allocations } from '../types';
 import ProrateModal from './ProrateModal';
+import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface TransactionAllocatorProps {
   statements: BankStatement[];
   projects: Project[];
   allocations: Allocations;
-  setAllocations: React.Dispatch<React.SetStateAction<Allocations>>;
 }
 
-const TransactionAllocator: React.FC<TransactionAllocatorProps> = ({ statements, projects, allocations, setAllocations }) => {
+const TransactionAllocator: React.FC<TransactionAllocatorProps> = ({ statements, projects, allocations }) => {
   const [selectedStatementId, setSelectedStatementId] = useState<string | null>(null);
   const [proratingTransaction, setProratingTransaction] = useState<Transaction | null>(null);
 
@@ -25,17 +26,15 @@ const TransactionAllocator: React.FC<TransactionAllocatorProps> = ({ statements,
   }, [statements, selectedStatementId]);
 
   const handleAllocationChange = (transactionId: string, projectId: string | null) => {
-    setAllocations(prev => ({
-      ...prev,
-      [transactionId]: { type: 'single', projectId: projectId }
-    }));
+    const newAllocation: Allocation = { type: 'single', projectId: projectId };
+    const docRef = doc(db, 'allocations', transactionId);
+    setDoc(docRef, { allocation: newAllocation });
   };
 
   const handleProrateSave = (transactionId: string) => (splits: ProratedSplit[]) => {
-     setAllocations(prev => ({
-      ...prev,
-      [transactionId]: { type: 'prorated', splits }
-    }));
+     const newAllocation: Allocation = { type: 'prorated', splits };
+     const docRef = doc(db, 'allocations', transactionId);
+     setDoc(docRef, { allocation: newAllocation });
   };
   
   const getProjectDisplay = (allocation: Allocation | undefined): string => {

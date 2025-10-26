@@ -1,14 +1,19 @@
+
 import React, { useState } from 'react';
 import { Project, Client, ProjectStatus, projectStatuses } from '../types';
 import { EditIcon, PlusIcon, TrashIcon } from './icons';
 
 interface ProjectManagerProps {
   projects: Project[];
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+  setProjects: {
+    add: (project: Omit<Project, 'id'>) => Promise<any>;
+    update: (project: Project) => Promise<any>;
+    delete: (id: string) => Promise<any>;
+  };
   clients: Client[];
 }
 
-const ProjectForm: React.FC<{ project?: Project; clients: Client[]; onSave: (project: Project) => void; onCancel: () => void }> = ({ project, clients, onSave, onCancel }) => {
+const ProjectForm: React.FC<{ project?: Project; clients: Client[]; onSave: (project: Project | Omit<Project, 'id'>) => void; onCancel: () => void }> = ({ project, clients, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Omit<Project, 'id'>>({
     displayId: project?.displayId || '',
     name: project?.name || '',
@@ -34,11 +39,14 @@ const ProjectForm: React.FC<{ project?: Project; clients: Client[]; onSave: (pro
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave({ ...formData, id: project?.id || Date.now().toString() });
+    if (project) {
+        onSave({ ...formData, id: project.id });
+    } else {
+        onSave(formData);
+    }
   };
 
   const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // Fix: Cast option to HTMLOptionElement to correctly access its value property.
     const selectedIds = Array.from(e.target.selectedOptions, option => (option as HTMLOptionElement).value);
     setFormData({ ...formData, secondaryClientIds: selectedIds });
   };
@@ -112,11 +120,11 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ projects, setProjects, 
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>(undefined);
 
-  const handleSave = (project: Project) => {
-    if (editingProject) {
-      setProjects(projects.map(p => p.id === project.id ? project : p));
+  const handleSave = async (projectData: Project | Omit<Project, 'id'>) => {
+    if ('id' in projectData) {
+      await setProjects.update(projectData as Project);
     } else {
-      setProjects([...projects, project]);
+      await setProjects.add(projectData);
     }
     setIsFormVisible(false);
     setEditingProject(undefined);
@@ -124,7 +132,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ projects, setProjects, 
   
   const handleDelete = (projectId: string) => {
     if(window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-        setProjects(projects.filter(p => p.id !== projectId));
+        setProjects.delete(projectId);
     }
   }
 

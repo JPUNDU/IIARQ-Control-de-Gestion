@@ -5,10 +5,14 @@ import { EditIcon, PlusIcon, TrashIcon } from './icons';
 
 interface ClientManagerProps {
   clients: Client[];
-  setClients: React.Dispatch<React.SetStateAction<Client[]>>;
+  setClients: {
+    add: (client: Omit<Client, 'id'>) => Promise<any>;
+    update: (client: Client) => Promise<any>;
+    delete: (id: string) => Promise<any>;
+  };
 }
 
-const ClientForm: React.FC<{ client?: Client; onSave: (client: Client) => void; onCancel: () => void }> = ({ client, onSave, onCancel }) => {
+const ClientForm: React.FC<{ client?: Client; onSave: (client: Client | Omit<Client, 'id'>) => void; onCancel: () => void }> = ({ client, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Omit<Client, 'id'>>({
     name: client?.name || '',
     lastName: client?.lastName || '',
@@ -30,7 +34,11 @@ const ClientForm: React.FC<{ client?: Client; onSave: (client: Client) => void; 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave({ ...formData, id: client?.id || Date.now().toString() });
+    if (client) {
+        onSave({ ...formData, id: client.id });
+    } else {
+        onSave(formData);
+    }
   };
 
   return (
@@ -67,11 +75,11 @@ const ClientManager: React.FC<ClientManagerProps> = ({ clients, setClients }) =>
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
 
-  const handleSave = (client: Client) => {
-    if (editingClient) {
-      setClients(clients.map(c => c.id === client.id ? client : c));
+  const handleSave = async (clientData: Client | Omit<Client, 'id'>) => {
+    if ('id' in clientData) {
+        await setClients.update(clientData as Client);
     } else {
-      setClients([...clients, client]);
+        await setClients.add(clientData);
     }
     setIsFormVisible(false);
     setEditingClient(undefined);
@@ -79,7 +87,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({ clients, setClients }) =>
 
   const handleDelete = (clientId: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
-      setClients(clients.filter(c => c.id !== clientId));
+      setClients.delete(clientId);
     }
   }
 
