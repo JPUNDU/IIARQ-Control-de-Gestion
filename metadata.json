@@ -1,0 +1,5 @@
+{
+  "name": "IIArq Management Platform",
+  "description": "A financial management and project allocation platform for Isidora Irarrázaval Arquitectura. Upload monthly bank statements, manage projects as cost centers, and assign transactions to single or multiple projects.",
+  "requestFramePermissions": []
+}
